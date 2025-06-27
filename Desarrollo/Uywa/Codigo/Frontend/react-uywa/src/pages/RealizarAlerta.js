@@ -268,7 +268,7 @@ export default function AlertForm() {
         <DialogTitle id="alert-dialog-title">{"Alerta Enviada"}</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            Tu alerta ha sido enviada correctamente.
+            Tu alerta ha sido enviada correctamente con ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}.
             <br /><br />
             Recibirás una notificación cuando sea revisada por nuestros moderadores.
           </DialogContentText>
