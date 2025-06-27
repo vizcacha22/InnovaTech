@@ -1,31 +1,12 @@
 import React, { useState, useEffect } from "react";
 import dayjs from "dayjs";
 import Mapa from "../components/Mapa/MapaMarks";
-import { 
-  Box, 
-  Container, 
-  Button, 
-  MenuItem, 
-  InputLabel, 
-  FormControl, 
-  Select,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  useMediaQuery,
-  useTheme
-} from '@mui/material';
+import { Box, Container, Button, MenuItem, InputLabel, FormControl, Select } from '@mui/material';
 import { DemoItem } from '@mui/x-date-pickers/internals/demo';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { alertaContainer, mapBotonBuscar, mapSearchAlert, mapMark } from "../components/Mapa/MapConstStyle";
 
-// Animal Options
 const ANIMAL_OPTIONS = [
   { id: 'animal-1', value: "Anaconda", animal: "Anaconda" },
   { id: 'animal-2', value: "Boa", animal: "Boa" },
@@ -53,7 +34,6 @@ const ANIMAL_OPTIONS = [
   { id: 'animal-24', value: "Zorro costeño", animal: "Zorro costeño" }
 ];
 
-// Department Options
 const DEPARTMENT_OPTIONS = [
   { id: 'dept-1', value: "Amazonas", departamento: "Amazonas" },
   { id: 'dept-2', value: "Ancash", departamento: "Ancash" },
@@ -82,72 +62,24 @@ const DEPARTMENT_OPTIONS = [
   { id: 'dept-25', value: "Ucayali", departamento: "Ucayali" }
 ];
 
-const API_BASE_URL = 'https://innovatech-ztzv.onrender.com';
+const baseUrl = 'https://innovatech-ztzv.onrender.com';
 
-function VerAlertaGoogle() {
-  // State management
+function Maps() {
   const [markerData, setMarkerData] = useState([]);
   const [animal, setAnimal] = useState("");
   const [region, setRegion] = useState("");
-  const [fechaIni, setFechaIni] = useState(dayjs().subtract(1, 'month'));
+  const [fechaIni, setFechaIni] = useState(dayjs());
   const [fechaFin, setFechaFin] = useState(dayjs());
-  const [selectedAlert, setSelectedAlert] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [userRole, setUserRole] = useState('guest');
-  const [progressStatus, setProgressStatus] = useState("Cargando datos del mapa...");
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Handler for animal selection
   const handleAnimal = (event) => {
     setAnimal(event.target.value);
   };
 
-  // Handler for region selection
   const handleRegion = (event) => {
     setRegion(event.target.value);
   };
 
-  // Check authentication status
-  useEffect(() => {
-    const checkAuth = () => {
-      const user = localStorage.getItem('UW-logged-session');
-      setUserRole(user ? 'user' : 'guest');
-    };
-    checkAuth();
-    cargarMarcadores();
-  }, []);
-
-  // Load all markers
-  const cargarMarcadores = async () => {
-    setLoading(true);
-    setProgressStatus("Obteniendo ubicaciones de alertas...");
-    try {
-      const response = await fetch(`${API_BASE_URL}/alertas/allmap`);
-      if (response.ok) {
-        setProgressStatus("Procesando datos...");
-        const data = await response.json();
-        setMarkerData(data);
-      } else {
-        setError('Error al cargar los marcadores');
-      }
-    } catch (error) {
-      setError('Error de conexión al servidor');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle search with filters
   const handleSearch = async () => {
-    if (fechaIni > fechaFin) {
-      setError('La fecha inicial no puede ser mayor a la fecha final');
-      return;
-    }
-
-    setLoading(true);
-    setProgressStatus("Buscando alertas...");
     const params = new URLSearchParams();
     if (fechaIni) params.append('fecha_ini', fechaIni.format('YYYY-MM-DD'));
     if (fechaFin) params.append('fecha_fin', fechaFin.format('YYYY-MM-DD'));
@@ -155,300 +87,125 @@ function VerAlertaGoogle() {
     if (region) params.append('region', region);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/alertas/search?${params.toString()}`);
+      const response = await fetch(`${baseUrl}/alertas/search?${params.toString()}`);
       if (response.ok) {
-        setProgressStatus("Filtrando resultados...");
         const data = await response.json();
         setMarkerData(data);
-        if (data.length === 0) {
-          setError('No se encontraron alertas con los filtros seleccionados');
-        }
       } else {
-        setError('Error al buscar alertas');
+        console.error("Error fetching data:", response.status);
       }
     } catch (error) {
-      setError('Error de conexión al servidor');
-    } finally {
-      setLoading(false);
+      console.error("Network error:", error);
     }
   };
 
-  // Reset all filters
   const handleReset = async () => {
     setAnimal("");
     setRegion("");
-    setFechaIni(dayjs().subtract(1, 'month'));
+    setFechaIni(dayjs());
     setFechaFin(dayjs());
-    setError(null);
     await cargarMarcadores();
   };
 
-  // Handle marker click
-  const handleMarkerClick = (alert) => {
-    setSelectedAlert(alert);
+  const cargarMarcadores = async () => {
+    try {
+      const response = await fetch(`${baseUrl}/alertas/allmap`);
+      if (response.ok) {
+        const data = await response.json();
+        setMarkerData(data);
+      }
+    } catch (error) {
+      console.error("Error loading markers:", error);
+    }
   };
 
-  // Close alert dialog
-  const handleCloseDialog = () => {
-    setSelectedAlert(null);
-  };
-
-  // Close error snackbar
-  const handleCloseError = () => {
-    setError(null);
-  };
-
-  // Render alert details dialog
-  const renderAlertDialog = () => {
-    if (!selectedAlert) return null;
-
-    return (
-      <Dialog open={!!selectedAlert} onClose={handleCloseDialog} fullScreen={isMobile}>
-        <DialogTitle>Detalles de la Alerta</DialogTitle>
-        <DialogContent>
-          <Typography variant="h6" gutterBottom>
-            {selectedAlert.animal_nombre || 'Animal no especificado'}
-          </Typography>
-          
-          <Box mb={2}>
-            <Typography variant="subtitle2">Información básica:</Typography>
-            <Typography>Fecha: {dayjs(selectedAlert.fecha_creacion).format('DD/MM/YYYY HH:mm')}</Typography>
-            <Typography>Región: {selectedAlert.region || 'No especificada'}</Typography>
-            <Typography>Estado: {selectedAlert.estado || 'No especificado'}</Typography>
-            {userRole === 'user' && (
-              <Typography>Reportado por: {selectedAlert.nombre_reportante || 'Anónimo'}</Typography>
-            )}
-          </Box>
-
-          {selectedAlert.descripcion && (
-            <Box mb={2}>
-              <Typography variant="subtitle2">Descripción:</Typography>
-              <Typography>{selectedAlert.descripcion}</Typography>
-            </Box>
-          )}
-
-          <Box mb={2}>
-            <Typography variant="subtitle2">Evidencia:</Typography>
-            {selectedAlert.evidencia_imagen ? (
-              <img 
-                src={`${API_BASE_URL}/uploads/${selectedAlert.evidencia_imagen}`} 
-                alt="Evidencia" 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '300px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd'
-                }} 
-                onError={(e) => {
-                  e.target.onerror = null; 
-                  e.target.src = '/img-not-available.png';
-                }}
-              />
-            ) : (
-              <Typography variant="body2" color="textSecondary">
-                No hay imagen disponible
-              </Typography>
-            )}
-          </Box>
-
-          {userRole === 'guest' && (
-            <Alert severity="info">
-              Inicia sesión para ver más detalles y reportar alertas
-            </Alert>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cerrar
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  };
-
-  // Render loading indicator
-  const renderLoadingIndicator = () => (
-    <Box sx={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      zIndex: theme.zIndex.modal + 1
-    }}>
-      <CircularProgress 
-        size={80} 
-        thickness={4}
-        sx={{ color: theme.palette.primary.main }}
-      />
-      <Typography variant="h6" sx={{ mt: 3, color: theme.palette.text.primary }}>
-        {progressStatus}
-      </Typography>
-      <Typography variant="body2" sx={{ mt: 2, color: theme.palette.text.secondary }}>
-        Por favor espere mientras se cargan los datos...
-      </Typography>
-      <Box sx={{ 
-        width: '300px',
-        height: '4px',
-        backgroundColor: theme.palette.grey[300],
-        borderRadius: '2px',
-        mt: 3,
-        overflow: 'hidden'
-      }}>
-        <Box sx={{
-          height: '100%',
-          width: '60%',
-          backgroundColor: theme.palette.primary.main,
-          animation: 'progressAnimation 2s ease-in-out infinite',
-          '@keyframes progressAnimation': {
-            '0%': { transform: 'translateX(-100%)' },
-            '100%': { transform: 'translateX(300px)' }
-          }
-        }} />
-      </Box>
-    </Box>
-  );
+  useEffect(() => {
+    cargarMarcadores();
+  }, []);
 
   return (
     <Container maxWidth={false} sx={alertaContainer}>
-      {/* Loading Indicator */}
-      {loading && renderLoadingIndicator()}
-
-      {/* Error Notification */}
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        onClose={handleCloseError}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseError} severity="error" sx={{ width: '100%' }}>
-          {error}
-        </Alert>
-      </Snackbar>
-
-      {/* Map Section */}
       <Box sx={mapMark}>
-        <Mapa 
-          markerData={markerData} 
-          onMarkerClick={handleMarkerClick}
-          userRole={userRole}
-        />
+        <Mapa markerData={markerData} />
       </Box>
 
-      {/* Search Panel - Hidden on mobile when alert is selected */}
-      {(!isMobile || !selectedAlert) && (
-        <Container maxWidth={false} sx={{ 
-          width: { xs: "100%", md: "30%" },
-          padding: { xs: 1, md: 2 }
-        }}>
-          <Box sx={mapSearchAlert}>
-            <Typography variant="h6" sx={{ textAlign: "left", mb: 2 }}>
-              Buscar alertas
-              {userRole === 'guest' && (
-                <Typography variant="caption" display="block" color="textSecondary">
-                  (Algunas funciones limitadas para invitados)
-                </Typography>
-              )}
-            </Typography>
+      <Container maxWidth={false} sx={{ width: { xs: "100%", md: "30%" } }}>
+        <Box sx={mapSearchAlert}>
+          <h3 style={{ textAlign: "left" }}>Buscar alerta</h3>
 
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DemoItem sx={{ marginBottom: 2 }}>
-                <DatePicker
-                  label="Fecha inicial"
-                  value={fechaIni}
-                  onChange={(newValue) => setFechaIni(newValue)}
-                  format="DD/MM/YYYY"
-                  maxDate={fechaFin}
-                  slotProps={{ textField: { fullWidth: true } }}
-                  disabled={loading}
-                />
-              </DemoItem>
-              <DemoItem sx={{ marginBottom: 2 }}>
-                <DatePicker
-                  label="Fecha final"
-                  value={fechaFin}
-                  onChange={(newValue) => setFechaFin(newValue)}
-                  format="DD/MM/YYYY"
-                  minDate={fechaIni}
-                  slotProps={{ textField: { fullWidth: true } }}
-                  disabled={loading}
-                />
-              </DemoItem>
-            </LocalizationProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DemoItem sx={{ marginBottom: "10px" }}>
+              <DatePicker
+                label="Fecha inicial"
+                value={fechaIni}
+                onChange={setFechaIni}
+                format="DD/MM/YYYY"
+              />
+            </DemoItem>
+            <DemoItem sx={{ marginBottom: "10px" }}>
+              <DatePicker
+                label="Fecha final"
+                value={fechaFin}
+                onChange={setFechaFin}
+                format="DD/MM/YYYY"
+              />
+            </DemoItem>
+          </LocalizationProvider>
 
-            <FormControl fullWidth sx={{ marginBottom: 2 }}>
-              <InputLabel id="animal-select-label">Animal</InputLabel>
-              <Select
-                labelId="animal-select-label"
-                id="animal-select"
-                value={animal}
-                label="Animal"
-                onChange={handleAnimal}
-                disabled={loading}
-              >
-                <MenuItem value="">
-                  <em>Todos los animales</em>
+          <FormControl fullWidth sx={{ marginBottom: "10px" }}>
+            <InputLabel id="animal-select-label">Animal</InputLabel>
+            <Select
+              labelId="animal-select-label"
+              id="animal-select"
+              value={animal}
+              label="Animal"
+              onChange={handleAnimal}
+            >
+              {ANIMAL_OPTIONS.map((animal) => (
+                <MenuItem key={animal.id} value={animal.value}>
+                  {animal.animal}
                 </MenuItem>
-                {ANIMAL_OPTIONS.map((animal) => (
-                  <MenuItem key={animal.id} value={animal.value}>
-                    {animal.animal}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              ))}
+            </Select>
+          </FormControl>
 
-            <FormControl fullWidth sx={{ marginBottom: 3 }}>
-              <InputLabel id="region-select-label">Región</InputLabel>
-              <Select
-                labelId="region-select-label"
-                id="region-select"
-                value={region}
-                label="Región"
-                onChange={handleRegion}
-                disabled={loading}
-              >
-                <MenuItem value="">
-                  <em>Todas las regiones</em>
+          <FormControl fullWidth sx={{ marginBottom: "20px" }}>
+            <InputLabel id="region-select-label">Región</InputLabel>
+            <Select
+              labelId="region-select-label"
+              id="region-select"
+              value={region}
+              label="Región"
+              onChange={handleRegion}
+            >
+              {DEPARTMENT_OPTIONS.map((dept) => (
+                <MenuItem key={dept.id} value={dept.value}>
+                  {dept.departamento}
                 </MenuItem>
-                {DEPARTMENT_OPTIONS.map((dept) => (
-                  <MenuItem key={dept.id} value={dept.value}>
-                    {dept.departamento}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              ))}
+            </Select>
+          </FormControl>
 
-            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
-              <Button 
-                variant="contained" 
-                onClick={handleSearch}
-                sx={mapBotonBuscar}
-                disabled={loading}
-              >
-                Buscar
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={handleReset}
-                sx={mapBotonBuscar}
-                disabled={loading}
-              >
-                Reiniciar
-              </Button>
-            </Box>
+          <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+            <Button 
+              variant="contained" 
+              onClick={handleSearch}
+              sx={mapBotonBuscar}
+            >
+              Buscar
+            </Button>
+            <Button 
+              variant="outlined" 
+              onClick={handleReset}
+              sx={mapBotonBuscar}
+            >
+              Reiniciar
+            </Button>
           </Box>
-        </Container>
-      )}
-
-      {/* Alert Details Dialog */}
-      {renderAlertDialog()}
+        </Box>
+      </Container>
     </Container>
   );
 }
 
-export default VerAlertaGoogle;
+export default Maps;
