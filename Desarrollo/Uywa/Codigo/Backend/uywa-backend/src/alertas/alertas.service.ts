@@ -154,21 +154,10 @@ export class AlertasService {
         return result;
     }
 
-    async changeState(id: number, newEstado: string, reporte_detallado?: string) {
-        const updateData: {
-            estado: string;
-            reporte_detallado?: string;
-        } = { 
-            estado: newEstado 
-        };
-    
-        if (reporte_detallado !== undefined) {
-            updateData.reporte_detallado = reporte_detallado;
-        }
-    
+    async changeState(id: number, newEstado: string){
         return await this.prisma.reporte.update({
             where: { id: id },
-            data: updateData,
+            data: { estado: newEstado },
         });
     }
 
