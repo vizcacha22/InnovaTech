@@ -56,13 +56,11 @@ export class AlertasController {
         @Body() body: { 
             id: number, 
             estado: string, 
-            reporte_detallado?: string 
         }
     ) {
         return this.alertasService.changeState(
             body.id,
             body.estado,
-            body.reporte_detallado || null  
         );
     }
     
