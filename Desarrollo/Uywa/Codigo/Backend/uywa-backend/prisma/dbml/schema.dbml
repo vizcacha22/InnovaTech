@@ -26,7 +26,6 @@ Table reporte {
   nombre_reportante String
   fecha_creacion DateTime [default: `now()`, not null]
   estado String [not null]
-  reporte_detallado String
   usuario usuario [not null]
 }
 

@@ -23,9 +23,8 @@ CREATE TABLE "reporte" (
     "latitud" DOUBLE PRECISION NOT NULL,
     "longitud" DOUBLE PRECISION NOT NULL,
     "nombre_reportante" TEXT,
-    "fecha_creacion" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_creacion" TIMESTAMP(3) NOT NULL,
     "estado" TEXT NOT NULL,
-    "reporte_detallado" TEXT,
 
     CONSTRAINT "reporte_pkey" PRIMARY KEY ("id")
 );
